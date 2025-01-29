@@ -24,7 +24,9 @@ class AuthLogin extends  AbstractAuthenticator
         public JWTTokenManagerInterface $jwtManager,
         public EntityManagerInterface $entityManager,
         public UserPasswordHasherInterface $userPasswordHasher,
-        public LoggerInterface $logger
+        public LoggerInterface $logger,
+        public FacticeReatlToken $facticeReatlToken,
+        public UserInputSanitizer $sanitizer
     )
     {}
 
@@ -37,8 +39,19 @@ class AuthLogin extends  AbstractAuthenticator
     { // elle est KISS n'est-ce pas ?
         $content = json_decode($request->getContent(),true);
 
-        $email = $content['email'];
-        $password = $content['password'];
+        // 🔒 Validation des données utilisateur
+        $validationResponse = $this->sanitizer->validateUserInput($content);
+        if ($validationResponse) {
+            throw new AuthenticationException(json_encode($validationResponse->getContent()));
+        }
+
+        // 🔄 Nettoyage des entrées avant traitement
+        $email = $this->sanitizer->sanitizeString($content['email']);
+        $password = $this->sanitizer->sanitizeString($content['password']);
+
+
+//        $email = $content['email'];
+//        $password = $content['password'];
 
         $checkIdentifierFunction = function ($email_): User {
             $user = $this->entityManager->getRepository(User::class)->findOneBy(['email'=>$email_]);
@@ -111,15 +124,13 @@ class AuthLogin extends  AbstractAuthenticator
             ]
         ];
 
-        $generateToken = $this->jwtManager->createFromPayload($user,$payload);
+//        $this->logger->info('Using passphrase: ' . getenv('JWT_PASSPHRASE'));
+//        $generateToken = $this->jwtManager->createFromPayload($user, $payload); // @todo check why it's not work
+//        $this->logger->info('Generated Token: ' . $generateToken);
 
 
-
-        $this->logger->info('Using passphrase: ' . getenv('JWT_PASSPHRASE'));
-
-        $generateToken = $this->jwtManager->createFromPayload($user, $payload);
-        $this->logger->info('Generated Token: ' . $generateToken);
-
+        // Générer le token avec FacticeRealToken
+        $jwtToken = $this->facticeReatlToken->generate($user);
 
 
 
@@ -130,7 +141,7 @@ class AuthLogin extends  AbstractAuthenticator
                 'email' => $user->getUserIdentifier(),
                 'id' => $forFindIdUser->getId()
             ],
-            'token' => $generateToken
+            'token' => $jwtToken
         ];
 
         return new JsonResponse($data);

@@ -31,6 +31,9 @@ RUN docker-php-ext-configure intl \
     && docker-php-ext-install \
         pdo pdo_mysql pdo_pgsql opcache intl zip calendar dom mbstring gd xsl
 
+#COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+#RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Exposer le port 80
 EXPOSE 80
 

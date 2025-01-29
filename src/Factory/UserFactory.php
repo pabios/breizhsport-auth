@@ -61,8 +61,8 @@ final class UserFactory extends PersistentProxyObjectFactory
     public static function createAdmin(): User
     {
         return self::createOne([
-            'email' => 'dev2@mo.com',
-            'password' => 'admin123',
+            'email' => 'admin@mo.com',
+            'password' => 'Admin123',
             'roles' => ['ROLE_ADMIN'],
         ]);
     }
